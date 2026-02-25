@@ -1,0 +1,45 @@
+LOGIN DETAILS
+
+All listed passwords are set to: pass123
+
+ADMIN ACCOUNTS
+--------------
+username: gaurav_bhatia | name: Gaurav Bhatia | password: pass123
+username: gaurav_jindal | name: Gaurav Jindal | password: pass123
+username: vaibhav_vats | name: Vaibhav Vats | password: pass123
+
+TEACHER ACCOUNTS
+----------------
+username: maneet_sidhu | name: Maneet Sidhu | password: pass123
+username: yash_sharma | name: Yash Sharma | password: pass123
+username: ravi_baliyan | name: Ravi Baliyan | password: pass123
+username: pankaj_gulati | name: Pankaj Gulati | password: pass123
+username: ritesh_tiwari | name: Ritesh Tiwari | password: pass123
+username: vishwas_sharma | name: Vishwas Sharma | password: pass123
+
+STUDENT ACCOUNTS
+----------------
+username: 2401530140001 | name: Amit Mishra | roll_no: MCAA001 | class: MCA | section: A | password: pass123
+username: 2401530140002 | name: Anshika Rana | roll_no: MCAA002 | class: MCA | section: A | password: pass123
+username: 2401530140003 | name: Rohan Tyagi | roll_no: MCAA003 | class: MCA | section: A | password: pass123
+username: 2401530140004 | name: Neha Bansal | roll_no: MCAA004 | class: MCA | section: A | password: pass123
+username: 2401530140005 | name: Kartik Verma | roll_no: MCAA005 | class: MCA | section: A | password: pass123
+username: 2401530140006 | name: Ishika Arora | roll_no: MCAA006 | class: MCA | section: A | password: pass123
+username: 2401530140007 | name: Harshit Gupta | roll_no: MCAA007 | class: MCA | section: A | password: pass123
+username: 2401530140008 | name: Priya Soni | roll_no: MCAA008 | class: MCA | section: A | password: pass123
+username: 2401530140009 | name: Aditya Rawat | roll_no: MCAA009 | class: MCA | section: A | password: pass123
+username: 2401530140010 | name: Mehak Chauhan | roll_no: MCAA010 | class: MCA | section: A | password: pass123
+username: 2401530140011 | name: Nitin Bhatnagar | roll_no: MCAA011 | class: MCA | section: A | password: pass123
+username: 2401530140012 | name: Sneha Kapoor | roll_no: MCAA012 | class: MCA | section: A | password: pass123
+username: 2401530140013 | name: Akash Sharma | roll_no: MCAB001 | class: MCA | section: B | password: pass123
+username: 2401530140014 | name: Tanya Jain | roll_no: MCAB002 | class: MCA | section: B | password: pass123
+username: 2401530140015 | name: Varun Negi | roll_no: MCAB003 | class: MCA | section: B | password: pass123
+username: 2401530140016 | name: Shruti Singh | roll_no: MCAB004 | class: MCA | section: B | password: pass123
+username: 2401530140017 | name: Ritvik Goyal | roll_no: MCAB005 | class: MCA | section: B | password: pass123
+username: 2401530140018 | name: Pooja Sengar | roll_no: MCAB006 | class: MCA | section: B | password: pass123
+username: 2401530140019 | name: Sagar Rathi | roll_no: MCAB007 | class: MCA | section: B | password: pass123
+username: 2401530140020 | name: Muskan Yadav | roll_no: MCAB008 | class: MCA | section: B | password: pass123
+username: 2401530140021 | name: Vivek Bhardwaj | roll_no: MCAB009 | class: MCA | section: B | password: pass123
+username: 2401530140022 | name: Anjali Saxena | roll_no: MCAB010 | class: MCA | section: B | password: pass123
+username: 2401530140023 | name: Pranay Thakur | roll_no: MCAB011 | class: MCA | section: B | password: pass123
+username: 2401530140024 | name: Kritika Mittal | roll_no: MCAB012 | class: MCA | section: B | password: pass123

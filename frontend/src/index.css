@@ -1,0 +1,42 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Sora:wght@400;600;700&display=swap");
+
+:root {
+  --app-bg-1: #f5f8fc;
+  --app-bg-2: #edf4fb;
+  --app-ink: #12253a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--app-ink);
+  background:
+    radial-gradient(circle at 8% 12%, rgba(17, 82, 147, 0.1), transparent 36%),
+    radial-gradient(circle at 92% 6%, rgba(30, 125, 107, 0.09), transparent 32%),
+    linear-gradient(180deg, var(--app-bg-1), var(--app-bg-2));
+}
+
+.soft-fade-up {
+  animation: softFadeUp 340ms ease-out;
+}
+
+@keyframes softFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,17 @@
+class_name,section,subject_code,subject_name,subject_type,max_marks
+MCA,A,MCA101,Data Structures,theory,100
+MCA,A,MCA102,Discrete Mathematics,theory,100
+MCA,A,MCA103,Operating Systems,theory,100
+MCA,A,MCA104,DBMS,theory,100
+MCA,A,MCA105,Computer Networks,theory,100
+MCA,A,MCA151,DS Lab,practical,100
+MCA,A,MCA152,DBMS Lab,practical,100
+MCA,A,MCA153,OS Lab,practical,100
+MCA,B,MCA101,Data Structures,theory,100
+MCA,B,MCA102,Discrete Mathematics,theory,100
+MCA,B,MCA103,Operating Systems,theory,100
+MCA,B,MCA104,DBMS,theory,100
+MCA,B,MCA105,Computer Networks,theory,100
+MCA,B,MCA151,DS Lab,practical,100
+MCA,B,MCA152,DBMS Lab,practical,100
+MCA,B,MCA153,OS Lab,practical,100

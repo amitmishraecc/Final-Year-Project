@@ -1,0 +1,336 @@
+FUTURE ENHANCEMENT MASTER ROADMAP
+=================================
+
+Project:
+AI-Based Student Performance Analysis & Classroom Management System
+
+Vision:
+Build a production-grade educational intelligence platform that combines
+academic operations, predictive insights, intervention workflows, and
+conversational assistance (botmitra) for Admin, Teacher, and Student roles.
+
+
+0) ROADMAP PRINCIPLES
+=====================
+
+1. Keep academic data trustworthy before scaling AI.
+2. Start with explainable intelligence, then predictive models, then LLM.
+3. Every AI suggestion should be traceable and role-governed.
+4. Ship in phases with measurable outcomes and rollback safety.
+
+
+1) CORE PRODUCT ENHANCEMENTS
+============================
+
+PHASE P1: Academic Operations Hardening
+---------------------------------------
+- Timetable management with period-level conflict validation.
+- Subject-wise attendance with late/leave state support.
+- Assignment module with due date, status, and grading rubric.
+- Exam planner: quiz/mid/end/lab/viva templates with weightage.
+
+Deliverables:
+- Validated CRUD and import flows.
+- Role-safe edit permissions.
+- Audit trace for attendance/marks updates.
+
+
+PHASE P2: Student Performance Intelligence UX
+---------------------------------------------
+- Student progress timeline (attendance dips, marks drops, missed assignments).
+- Teacher class action board (pending data entry, at-risk students, notices).
+- Admin program-level analytics (section trends, grade heatmap, risk distribution).
+
+Deliverables:
+- Unified visual language across dashboards.
+- Dynamic filtering by class, section, subject, date range.
+- Export-ready report views.
+
+
+PHASE P3: Intervention Workflow System
+--------------------------------------
+- Auto-create intervention tasks from risk triggers.
+- Workflow states: Open -> In Progress -> Resolved -> Closed.
+- Teacher notes, follow-up dates, and outcome tags.
+- Admin escalation queue for unresolved critical risk cases.
+
+Deliverables:
+- `interventions` data model.
+- Intervention APIs + UI.
+- Resolution metrics and accountability logs.
+
+
+2) AI/ML ENHANCEMENT ROADMAP
+============================
+
+PHASE AI-1: Explainable Rule Engine V2
+--------------------------------------
+- Configurable thresholds by program/class/subject.
+- Trend-aware rules:
+  - declining attendance trend
+  - declining marks trend
+  - repeated missing assignments
+- Weighted multi-factor risk scoring:
+  - Good
+  - Monitor
+  - At Risk
+  - Critical
+
+Deliverables:
+- `risk_reason_breakdown` per student.
+- Rule config registry and simulation endpoint.
+- Reason-code-first UI for trust and explainability.
+
+
+PHASE AI-1.5: Conversational Deterministic Assistant (botmitra)
+----------------------------------------------------------------
+- Natural language querying for:
+  - at-risk students
+  - low attendance
+  - low marks
+  - student lookup by name
+  - total students by class/section
+- Role-scoped access (admin global, teacher assigned scope).
+- Natural language report generation for weekly/section summaries.
+
+Deliverables:
+- Stable NLP parser + intent/action routing.
+- Context memory per chat session.
+- Popup chat assistant UX with persistence.
+
+
+PHASE AI-2: Predictive Model Pilot
+----------------------------------
+- Baseline supervised models:
+  - pass/fail probability
+  - risk tier prediction
+  - expected final score regression
+- Shadow-mode rollout before decision coupling.
+- Agreement dashboard: Rule vs Model outputs.
+
+Deliverables:
+- `model_predictions` with model/version metadata.
+- Offline evaluation reports (AUC/F1/calibration).
+- Safe fallback to rule engine.
+
+
+PHASE AI-2.5: Prescriptive Decision Support
+-------------------------------------------
+- Suggest action bundles based on risk profile:
+  - remedial plan
+  - attendance recovery plan
+  - assignment completion plan
+- "What-if" simulation:
+  - if attendance +X%, expected score delta
+  - if assignment completion +Y%, risk tier change
+
+Deliverables:
+- Prescriptive recommendation API.
+- Scenario simulation module.
+- Outcome tracking against intervention actions.
+
+
+PHASE AI-3: Actual LLM Integration (Final AI Layer)
+----------------------------------------------------
+- Integrate production LLM provider (OpenAI/Gemini/self-hosted).
+- Tool-calling architecture for safe data operations.
+- Prompt registry with versioning and guardrails.
+- Hallucination minimization via retrieval + schema-checked outputs.
+
+Deliverables:
+- LLM orchestrator service for botmitra.
+- Prompt + tool telemetry dashboard.
+- Cost and latency governance.
+
+
+PHASE AI-3.1: Voice Bot (STT + TTS)
+-----------------------------------
+- Voice command support for teachers/admin.
+- Speech-to-text request capture.
+- Text-to-speech response playback.
+- UI controls: push-to-talk, transcript review, replay, mute.
+
+Deliverables:
+- Voice assistant API pipeline.
+- Frontend voice widget.
+- Multilingual extension plan (English -> Hinglish -> Hindi).
+
+
+PHASE AI-3.2: Agentic Automation
+--------------------------------
+- Multi-step reasoning with confirmation gates.
+- Action execution from chat:
+  - draft notice
+  - create intervention task
+  - generate report file
+- Mandatory approval before write actions.
+
+Deliverables:
+- Agent action framework.
+- Human approval workflow.
+- Action audit logs.
+
+
+3) DATA, RELIABILITY, AND SCALE
+===============================
+
+PHASE D1: Data Quality & Feature Readiness
+------------------------------------------
+- Validation contracts for imports and API writes.
+- Missing value policies and anomaly detectors.
+- Periodic feature snapshots for model readiness.
+
+Deliverables:
+- `feature_snapshots` collection.
+- Data quality scorecards.
+- Drift baseline reports.
+
+
+PHASE D2: Performance & Observability
+-------------------------------------
+- Caching layer for hot dashboards.
+- Background jobs for heavy sync/analytics.
+- API latency/error dashboards.
+- Alerting for failed jobs and data sync issues.
+
+Deliverables:
+- Monitoring stack (logs + metrics + alerts).
+- Retry policy and dead-letter handling for failed jobs.
+
+
+PHASE D3: Security Hardening
+----------------------------
+- Strong password policies and account lock protection.
+- Refresh token and session controls.
+- Rate limiting for auth and write APIs.
+- Field-level authorization for sensitive updates.
+
+Deliverables:
+- Security policy checklist.
+- Pen-test readiness and audit logs.
+
+
+PHASE D4: Deployment & Operations
+---------------------------------
+- Dockerized backend/frontend.
+- Environment separation: dev/stage/prod.
+- CI/CD with lint/test/build gates.
+- Backup and disaster recovery playbook.
+
+Deliverables:
+- Production deployment pipeline.
+- Versioned release and rollback process.
+
+
+4) ROADMAP EXECUTION ORDER
+==========================
+
+Sprint 1:
+- P1 Academic hardening
+- D1 Data quality foundation
+
+Sprint 2:
+- AI-1 Rule Engine V2
+- P3 Intervention workflow start
+
+Sprint 3:
+- AI-1.5 botmitra deterministic assistant stabilization
+- P2 dashboard intelligence views
+
+Sprint 4:
+- AI-2 predictive pilot (shadow mode)
+- D2 observability and job reliability
+
+Sprint 5:
+- AI-2.5 prescriptive support
+- D3 security hardening
+
+Sprint 6:
+- AI-3 LLM integration
+- AI-3.1 voice support
+- D4 production operations
+
+
+5) SUCCESS METRICS
+==================
+
+Academic Metrics:
+- Attendance compliance improvement (%)
+- Assignment completion rate improvement (%)
+- At-risk reduction over time (%)
+
+Operational Metrics:
+- Teacher data entry turnaround time
+- Intervention closure time
+- Dashboard/API latency
+
+AI Metrics:
+- Rule/model agreement
+- Prediction calibration quality
+- botmitra response usefulness rating
+- Voice command task completion rate
+
+
+6) CURRENT PROGRESS SNAPSHOT (Updated: 2026-02-24)
+===================================================
+
+IMPLEMENTED BACKEND MODULES
+---------------------------
+- AI Assessment APIs:
+  - Generate MCQ JSON using structured AI prompt output.
+  - Save generated assessments.
+  - Publish/lock/delete assessments.
+  - One-attempt-per-student enforcement.
+  - Tab switch violation tracking with auto-lock after threshold.
+- Assessment analytics and intelligence:
+  - Subject-wise performance calculation.
+  - Weak topic detection.
+  - Readiness scoring and gap analysis.
+  - Recommendation history with suggested learning resources.
+- Assignment workflow APIs:
+  - Teacher assignment create/update/status flows.
+  - Rich content assignment support (`content_html`).
+  - Per-student outcome save (completed flag, grade, feedback).
+  - NLP-style feedback analysis in assignment outcomes.
+- Teacher insights APIs:
+  - Merged student-level performance/attendance/assignment insights.
+  - AI feedback summary per student.
+- Attendance fixes:
+  - Period attendance ingestion and date/day normalization improvements.
+  - Period-to-daily attendance sync behavior corrections.
+- Calendar APIs:
+  - `POST /calendar/events`
+  - `GET /calendar/events`
+  - `DELETE /calendar/events/{event_id}`
+  - Role-based scope controls (personal/class/global where allowed).
+  - Built-in public holiday injection in calendar results.
+
+IMPLEMENTED FRONTEND MODULES
+----------------------------
+- Teacher Dashboard:
+  - AI assessment management UI (generate/edit/publish/lock/delete).
+  - Assignment center with rich content integration.
+  - Assignment evaluation table with grade + feedback + NLP insight columns.
+  - Student Insights dialog for consolidated performance view.
+- Student Dashboard:
+  - Assignment view with rich content rendering and `.doc` download.
+  - AI assessments attempt interface and related status feedback.
+- Admin Dashboard:
+  - Improved overview layout and analytics visibility.
+  - Right-side compact calendar integration in overview.
+- Shared Calendar UI/UX:
+  - Compact and full variants supported.
+  - Double-click date opens Add Event popup.
+  - Hover on date shows event/holiday tooltip preview.
+  - Removed separate "Events on <date>" list block for cleaner UI.
+
+IN-PROGRESS / NEXT RECOMMENDED
+------------------------------
+- Add event edit flow (currently create/delete pattern).
+- Add recurring reminders (daily/weekly/custom).
+- Add timezone and locale-aware holiday packs.
+- Add reminder notification channels (in-app + optional email/push).
+- Add audit history for calendar changes and reminder ownership handover.
+
+
+END OF FUTURE ENHANCEMENT ROADMAP
