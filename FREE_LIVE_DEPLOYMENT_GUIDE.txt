@@ -1,0 +1,161 @@
+FREE LIVE DEPLOYMENT GUIDE (NO-COST SETUP)
+==========================================
+
+Project: Student Performance Analysis System
+Stack: FastAPI (backend) + React/Vite (frontend) + MongoDB
+Goal: Deploy live for free and keep developing for free.
+
+Recommended Free Hosting Combination
+------------------------------------
+1. Database: MongoDB Atlas Free Tier (M0)
+2. Backend API: Render Free Web Service (Python)
+3. Frontend Web App: Vercel Hobby (React/Vite)
+
+What You Need Before Starting
+-----------------------------
+1. A GitHub account
+2. A MongoDB Atlas account
+3. A Render account
+4. A Vercel account
+5. Your project pushed to a GitHub repository
+
+STEP 1: Prepare Repository for Deployment
+-----------------------------------------
+1. Ensure your project structure is:
+   - student-performance-analysis-system/backend
+   - student-performance-analysis-system/frontend
+2. In backend folder, create requirements.txt if not present.
+3. Add these minimum dependencies to requirements.txt:
+   fastapi
+   uvicorn
+   pymongo
+   python-dotenv
+   python-jose
+   passlib[bcrypt]
+   pydantic
+   python-multipart
+4. Commit and push all deployment-related files to GitHub.
+
+STEP 2: Create Free MongoDB Atlas Database
+------------------------------------------
+1. Login to MongoDB Atlas.
+2. Create a new project.
+3. Create an M0 free cluster.
+4. Create a database user (username/password).
+5. In Network Access, allow your deployment platforms:
+   - Quick setup (dev): 0.0.0.0/0
+   - Better: add only required IPs when possible
+6. In Connect, copy connection string and replace user/password.
+7. Save as your MONGO_URI value.
+
+STEP 3: Deploy Backend (FastAPI) on Render (Free)
+--------------------------------------------------
+1. Login to Render.
+2. Click New -> Web Service.
+3. Connect your GitHub repo.
+4. Configure:
+   - Name: student-performance-api
+   - Root Directory: student-performance-analysis-system/backend
+   - Runtime: Python
+   - Build Command: pip install -r requirements.txt
+   - Start Command: uvicorn main:app --host 0.0.0.0 --port $PORT
+   - Plan: Free
+5. Add Environment Variables:
+   - MONGO_URI = <your Atlas connection string>
+   - SECRET_KEY = <long random string>
+6. Deploy service.
+7. After deploy, test:
+   - GET https://<your-render-service>.onrender.com/
+   - Expect: {"message": "Student Performance System Running"}
+
+STEP 4: Deploy Frontend (React/Vite) on Vercel (Free)
+------------------------------------------------------
+1. Login to Vercel.
+2. Import your GitHub repository.
+3. Configure project:
+   - Root Directory: student-performance-analysis-system/frontend
+   - Framework Preset: Vite
+   - Build Command: npm run build
+   - Output Directory: dist
+4. Add Environment Variable:
+   - VITE_API_BASE = https://<your-render-service>.onrender.com
+5. Deploy.
+6. Open deployed Vercel URL and test login + API-backed pages.
+
+STEP 5: Verify Full Live Flow
+-----------------------------
+1. Open frontend URL.
+2. Login with your existing credentials.
+3. Check key modules:
+   - auth
+   - dashboard
+   - attendance
+   - assessments
+   - calendar/events
+4. If API calls fail:
+   - Confirm VITE_API_BASE is correct on Vercel
+   - Confirm backend is healthy on Render
+   - Confirm MONGO_URI and Atlas network access settings
+
+STEP 6: Keep Working on It for Free (Daily Workflow)
+-----------------------------------------------------
+1. Create a feature branch locally:
+   git checkout -b feature/<your-change>
+2. Run locally:
+   Backend:
+   - cd student-performance-analysis-system/backend
+   - uvicorn main:app --reload
+   Frontend:
+   - cd student-performance-analysis-system/frontend
+   - npm install
+   - npm run dev
+3. Push branch to GitHub.
+4. Open Pull Request.
+5. Merge to main.
+6. Render and Vercel auto-redeploy from GitHub.
+
+STEP 7: Free-Tier Limits You Must Plan Around
+---------------------------------------------
+1. Render free web services can sleep when idle (cold start delay).
+2. Vercel Hobby has monthly resource limits.
+3. Atlas M0 has storage and throughput limits.
+4. Keep demo data small and archive old records.
+
+STEP 8: Optional Hardening (Still Free)
+---------------------------------------
+1. Restrict CORS in backend/main.py (avoid "*" in production).
+2. Rotate SECRET_KEY periodically.
+3. Move secrets only to Render/Vercel env vars (never hardcode).
+4. Add health check endpoint and basic request logging.
+
+Quick Troubleshooting
+---------------------
+1. "MONGO_URI not found" -> Add env var in Render and redeploy.
+2. "Cannot connect to backend" in frontend -> Fix VITE_API_BASE in Vercel.
+3. 401 errors -> token expired or missing auth header.
+4. CORS issues -> set specific frontend domain in allow_origins.
+
+Suggested File Additions (Optional)
+-----------------------------------
+1. backend/requirements.txt
+2. backend/.env.example
+3. frontend/.env.example
+
+Example .env.example files:
+
+backend/.env.example
+MONGO_URI=mongodb+srv://<user>:<pass>@<cluster>/<db>?retryWrites=true&w=majority
+SECRET_KEY=replace_with_long_random_secret
+
+frontend/.env.example
+VITE_API_BASE=https://your-backend-service.onrender.com
+
+Useful Links (official docs)
+----------------------------
+1. Render free deploy docs: https://render.com/docs/free
+2. Vercel Hobby plan: https://vercel.com/docs/plans/hobby
+3. Vercel limits: https://vercel.com/docs/limits
+4. MongoDB pricing (M0 free): https://www.mongodb.com/pricing
+5. MongoDB Atlas limits: https://www.mongodb.com/docs/atlas/reference/limitations/
+
+END

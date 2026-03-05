@@ -42,6 +42,24 @@ def _history_for_student(ids: list[str]) -> list[dict]:
     return list(attendance_collection.aggregate(pipeline))
 
 
+def _submission_status(due_date: str | None, outcome: dict, is_completed_fallback: bool) -> str:
+    is_completed = bool(outcome.get("is_completed", is_completed_fallback))
+    if is_completed:
+        completed_on_time = outcome.get("completed_on_time")
+        if completed_on_time is False:
+            return "late"
+        completed_at = outcome.get("completed_at")
+        if due_date and completed_at:
+            try:
+                due_dt = datetime.fromisoformat(f"{due_date}T23:59:59")
+                completed_dt = datetime.fromisoformat(str(completed_at).replace("Z", ""))
+                return "late" if completed_dt > due_dt else "submitted"
+            except Exception:
+                pass
+        return "submitted"
+    return "missing"
+
+
 @router.get("/attendance/history")
 def get_my_attendance_history(user=Depends(require_student)):
     return _history_for_student(_student_identifiers(user))
@@ -120,6 +138,7 @@ def get_my_assignments(user=Depends(require_student)):
                 else (row.get("status") == "completed" and row.get("target_username") == username)
             )
         row["is_completed"] = is_completed
+        row["submission_status"] = _submission_status(row.get("due_date"), my_outcome, is_completed)
         row["completed_on_time"] = my_outcome.get("completed_on_time")
         row["grade_score"] = my_outcome.get("grade_score")
         row["grade_label"] = my_outcome.get("grade_label")

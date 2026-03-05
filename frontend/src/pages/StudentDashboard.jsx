@@ -61,6 +61,12 @@ function StudentDashboard() {
   const [assignmentPreviewOpen, setAssignmentPreviewOpen] = useState(false);
   const [assignmentPreview, setAssignmentPreview] = useState(null);
   const [pageView, setPageView] = useState("overview");
+  const [selfAnalytics, setSelfAnalytics] = useState({
+    class_average: {},
+    topper_benchmark: {},
+    leaderboard_top_3: [],
+    comparison: {},
+  });
 
   const riskLevel = useMemo(() => {
     const score = Number(overview.weighted_score || 0);
@@ -146,12 +152,13 @@ function StudentDashboard() {
       setLoading(true);
       setError("");
       try {
-        const [overviewData, historyData, subjectData, noticesData, studentAssignments] = await Promise.all([
+        const [overviewData, historyData, subjectData, noticesData, studentAssignments, selfAnalyticsData] = await Promise.all([
           apiFetch("/performance/student/overview"),
           apiFetch("/student/attendance/history"),
           apiFetch("/academic/student/subject-overview"),
           apiFetch("/notices/student"),
           apiFetch("/student/assignments"),
+          apiFetch("/performance/student/self-analytics"),
         ]);
         const profileData = await apiFetch("/profile/me");
 
@@ -160,6 +167,7 @@ function StudentDashboard() {
         setSubjectOverview(subjectData || {});
         setNotices(Array.isArray(noticesData) ? noticesData : []);
         setAssignmentData(studentAssignments || { common: [], personal: [] });
+        setSelfAnalytics(selfAnalyticsData || {});
         setProfile(profileData || {});
       } catch (err) {
         setError(err.message || "Failed to load student dashboard");
@@ -256,6 +264,96 @@ function StudentDashboard() {
                     <LinearProgress variant="determinate" sx={{ mt: 1, mb: 1.5 }} value={Math.max(0, Math.min(100, Number(overview.average_assignment_score || 0)))} />
                     <Typography variant="body2" color="text.secondary">Co-Curricular Average: {overview.average_co_curricular_score}</Typography>
                     <LinearProgress variant="determinate" sx={{ mt: 1 }} value={Math.max(0, Math.min(100, Number(overview.average_co_curricular_score || 0)))} />
+                  </CardContent>
+                </Card>
+
+                <Card sx={{ mt: 2 }}>
+                  <CardContent>
+                    <Typography variant="h6" sx={{ mb: 1.5 }}>Student Self-Analytics</Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={4}>
+                        <StatCard label="My Rank" value={selfAnalytics?.comparison?.my_rank ?? "-"} />
+                      </Grid>
+                      <Grid item xs={12} md={4}>
+                        <StatCard
+                          label="Vs Class Avg (Weighted)"
+                          value={selfAnalytics?.comparison?.vs_class_average?.weighted_score_delta ?? 0}
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={4}>
+                        <StatCard
+                          label="Gap to Topper"
+                          value={selfAnalytics?.comparison?.vs_topper?.weighted_score_gap ?? 0}
+                        />
+                      </Grid>
+                    </Grid>
+
+                    <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+                      Benchmark Comparison
+                    </Typography>
+                    <TableContainer component={Paper}>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Benchmark</TableCell>
+                            <TableCell>Weighted Score</TableCell>
+                            <TableCell>Marks</TableCell>
+                            <TableCell>Attendance %</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell>My Current</TableCell>
+                            <TableCell>{selfAnalytics?.my_metrics?.weighted_score ?? 0}</TableCell>
+                            <TableCell>{selfAnalytics?.my_metrics?.average_marks ?? 0}</TableCell>
+                            <TableCell>{selfAnalytics?.my_metrics?.attendance_percentage ?? 0}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Class Average</TableCell>
+                            <TableCell>{selfAnalytics?.class_average?.weighted_score ?? 0}</TableCell>
+                            <TableCell>{selfAnalytics?.class_average?.average_marks ?? 0}</TableCell>
+                            <TableCell>{selfAnalytics?.class_average?.attendance_percentage ?? 0}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Topper Benchmark</TableCell>
+                            <TableCell>{selfAnalytics?.topper_benchmark?.weighted_score ?? 0}</TableCell>
+                            <TableCell>{selfAnalytics?.topper_benchmark?.average_marks ?? 0}</TableCell>
+                            <TableCell>{selfAnalytics?.topper_benchmark?.attendance_percentage ?? 0}</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+
+                    <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>
+                      Class Leaderboard (Top 3)
+                    </Typography>
+                    <TableContainer component={Paper}>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Rank</TableCell>
+                            <TableCell>Student</TableCell>
+                            <TableCell>Weighted Score</TableCell>
+                            <TableCell>Grade</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {(selfAnalytics?.leaderboard_top_3 || []).map((row) => (
+                            <TableRow key={`${row.rank}-${row.username}`}>
+                              <TableCell>{row.rank}</TableCell>
+                              <TableCell>{row.name} ({row.username})</TableCell>
+                              <TableCell>{row.weighted_score}</TableCell>
+                              <TableCell>{row.grade}</TableCell>
+                            </TableRow>
+                          ))}
+                          {(selfAnalytics?.leaderboard_top_3 || []).length === 0 && (
+                            <TableRow>
+                              <TableCell colSpan={4}>Leaderboard data not available.</TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
                   </CardContent>
                 </Card>
 
@@ -364,7 +462,7 @@ function StudentDashboard() {
                                 <TableCell>{item.due_date || "-"}</TableCell>
                                 <TableCell>{item.grade_score ?? "-"}</TableCell>
                                 <TableCell>{item.feedback || "-"}</TableCell>
-                                <TableCell>{item.is_completed ? "Completed" : "Pending"}</TableCell>
+                                <TableCell>{item.submission_status || (item.is_completed ? "submitted" : "missing")}</TableCell>
                                 <TableCell>
                                   <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                                     <Button size="small" variant="outlined" onClick={() => openAssignmentPreview(item)}>View</Button>
@@ -406,7 +504,7 @@ function StudentDashboard() {
                                 <TableCell>{item.due_date || "-"}</TableCell>
                                 <TableCell>{item.grade_score ?? "-"}</TableCell>
                                 <TableCell>{item.feedback || "-"}</TableCell>
-                                <TableCell>{item.is_completed ? "Completed" : "Pending"}</TableCell>
+                                <TableCell>{item.submission_status || (item.is_completed ? "submitted" : "missing")}</TableCell>
                                 <TableCell>
                                   <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                                     <Button size="small" variant="outlined" onClick={() => openAssignmentPreview(item)}>View</Button>

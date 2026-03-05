@@ -1,0 +1,373 @@
+IMPLEMENTED FEATURES & AI LOGIC GUIDE
+====================================
+
+Project: Student Performance Analysis System
+Purpose of this file:
+- Explain what was implemented.
+- Explain AI and analytics logic used.
+- Explain formulas/algorithms.
+- Explain how to rebuild this from scratch.
+
+
+1) FEATURE MAP (WHAT IS IMPLEMENTED)
+====================================
+A) Assignment Lifecycle
+- Create assignment with:
+  - due_date (mandatory)
+  - rubric
+  - max_marks
+  - class/section/subject
+  - assignment_type (common/personal)
+- Track each student's submission state:
+  - submitted
+  - late
+  - missing
+- Teacher evaluation flow:
+  - grade_score
+  - feedback
+  - NLP flags from feedback
+- Reminder emails:
+  - before deadline
+  - after deadline (missing submissions)
+
+B) AI Rule Engine + Explainable Risk
+- Configurable risk thresholds and weights.
+- Weighted risk score.
+- Risk category mapping:
+  - Good / Monitor / At Risk / Critical
+- Per-student explainability:
+  - risk_reason_breakdown with severity + impact.
+- Risk config versioning + rollback.
+- Risk simulation endpoint (before/after impact).
+
+C) Botmitra (Deterministic NL Assistant)
+- Intent detection from text query.
+- Scope extraction (class/section).
+- Teacher/admin scoped access.
+- Session memory support:
+  - follow-up queries can reuse last scope.
+
+D) Student Progress Analysis (Teacher View)
+- Deep per-student analysis endpoint:
+  - readiness score
+  - momentum score
+  - trends
+  - consistency
+  - concern flags
+  - recommended actions
+- Teacher dashboard has "Deep Analysis" action.
+
+E) Student Self-Analytics + Leaderboard
+- Student compares own metrics with:
+  - class average benchmark
+  - topper benchmark
+- Class-wise leaderboard top 3 students.
+
+
+2) CORE DATA COLLECTIONS USED
+=============================
+- users
+- attendance
+- performance_records
+- student_assignments
+- assessment_attempts
+- ai_risk_config
+- ai_risk_config_versions
+- ai_chat_sessions
+- assignment_reminders
+
+
+3) ASSIGNMENT LIFECYCLE LOGIC (DETAILED)
+=========================================
+Location:
+- backend/routes/teacher.py
+- backend/routes/student.py
+
+3.1 Create Assignment
+- Endpoint: POST /teacher/assignments
+- Required logic:
+  - due_date must exist
+  - due_date must be valid YYYY-MM-DD
+  - max_marks > 0
+  - rubric stored as text criteria
+
+3.2 What is Rubric?
+- Rubric = evaluation criteria teacher follows while grading.
+- Example rubric:
+  - Concept clarity: 30 marks
+  - Correctness: 40 marks
+  - Presentation: 20 marks
+  - Timeliness: 10 marks
+- In system, rubric is stored and shown so grading is consistent and auditable.
+
+3.3 Submission Status Algorithm
+Function behavior:
+- if completed and on-time => submitted
+- if completed but after due => late
+- if not completed => missing
+
+Pseudo-logic:
+- is_completed? yes -> compare completed_at vs due_date
+- completed_at > due_date_end_of_day => late
+- else submitted
+- if not completed => missing
+
+3.4 Max Marks Logic
+- grade_score is clamped to [0, max_marks]
+- prevents invalid grading when max_marks != 100
+
+3.5 Reminder Email Logic
+Endpoint:
+- POST /teacher/assignments/send-reminders
+
+Process:
+1. load teacher assignments with due_date.
+2. for each assignment, compute due proximity.
+3. for each allowed student:
+   - skip if submitted/late (already done)
+   - if missing and due soon => before_due reminder
+   - if missing and overdue => after_due reminder
+4. dedupe using assignment_reminders collection.
+5. send SMTP email.
+6. log sent/failed/skipped.
+
+Environment variables required:
+- SMTP_HOST
+- SMTP_PORT
+- SMTP_USERNAME
+- SMTP_PASSWORD
+- SMTP_FROM
+- SMTP_USE_TLS
+
+
+4) NLP/AI RISK ENGINE LOGIC
+===========================
+Location:
+- backend/routes/ai.py
+
+4.1 Intent Detection (Rule-based NLP)
+- Uses keyword pattern matching to detect intent:
+  - total_students
+  - student_lookup
+  - at_risk_students
+  - low_attendance
+  - low_marks
+  - missing_assignments
+  - top_performers
+  - class_report
+
+4.2 Scope Resolution
+- Extracts class/section from query text.
+- If teacher has one assigned class-section and query omits scope, auto-fills.
+- Enforces teacher scope access guard.
+
+4.3 Risk Score Model (Explainable)
+Inputs:
+- attendance percentage
+- average marks
+- assignment behavior (score + missing ratio)
+
+Thresholds:
+- attendance_threshold
+- marks_threshold
+- assignment_threshold
+- missing_assignment_ratio_threshold
+
+Severities:
+- below-threshold severity for attendance/marks/assignment score
+- above-threshold severity for missing ratio
+
+Weighted score:
+risk_score = 100 * (
+  attendance_severity * attendance_weight +
+  marks_severity * marks_weight +
+  assignment_severity * assignment_weight
+)
+
+Risk categories (cutoffs configurable):
+- Good
+- Monitor
+- At Risk
+- Critical
+
+4.4 Explainability Output
+For each student:
+- reason_codes
+- risk_score
+- risk_reason_breakdown[]
+  - code
+  - triggered
+  - value
+  - threshold
+  - severity
+  - weight
+  - weighted_impact
+
+4.5 Risk Config Registry + Rollback
+Endpoints:
+- GET /ai/risk-config
+- PUT /ai/risk-config
+- GET /ai/risk-config/versions
+- POST /ai/risk-config/rollback/{version}
+
+Behavior:
+- every update creates version snapshot.
+- rollback creates a new rollback version (not destructive overwrite only).
+
+4.6 Risk Simulation
+Endpoint:
+- POST /ai/risk-simulate
+
+Returns:
+- current vs simulated distribution
+- moved_higher_risk / moved_lower_risk
+- avg risk score delta
+- top changed students
+
+
+5) BOTMITRA SESSION MEMORY LOGIC
+================================
+Endpoints:
+- POST /ai/nl-query/session
+- GET /ai/nl-session/{session_id}
+
+How it works:
+- session stores recent turns in ai_chat_sessions.
+- stores last_scope (class/section).
+- follow-up query can omit scope and still work.
+- response summary kept for context continuity.
+
+
+6) STUDENT PROGRESS DEEP ANALYSIS LOGIC
+=======================================
+Location:
+- backend/routes/teacher.py
+Endpoint:
+- GET /teacher/student-progress-analysis
+
+6.1 Metrics Computed
+- attendance_percentage
+- average_marks
+- average_assignment_score
+- average_assignment_grade
+- average_assessment_score
+- average_co_curricular_score
+- assignment_completion_rate
+- assignment_on_time_rate
+- readiness_score
+- momentum_score
+- risk_level
+
+6.2 Trend Algorithm
+- split series into previous half and recent half
+- delta = recent_avg - previous_avg
+- direction:
+  - delta >= +2 => improving
+  - delta <= -2 => declining
+  - else stable
+
+6.3 Consistency Algorithm
+- uses population standard deviation
+- consistency_score = 100 - (std_dev * 2)
+- clamped to [0,100]
+
+6.4 Readiness Formula
+readiness =
+  marks_avg * 0.35 +
+  attendance * 0.25 +
+  assignment_grade_avg * 0.20 +
+  assessment_avg * 0.20
+
+6.5 Momentum Formula
+momentum = 50 +
+  (marks_delta * 2.0) +
+  (attendance_delta * 0.8) +
+  (assignment_delta * 1.2) +
+  (assessment_delta * 1.0)
+
+6.6 Concern Flag Rules
+Examples:
+- LOW_ATTENDANCE
+- LOW_MARKS
+- LOW_ASSIGNMENT_COMPLETION
+- LOW_ASSIGNMENT_QUALITY
+- LOW_ASSESSMENT_PERFORMANCE
+- MARKS_DECLINING
+- ATTENDANCE_DECLINING
+- ASSESSMENT_DISCIPLINE_RISK
+
+6.7 Action Plan Generation
+- Rule-based recommendations generated from concern flags.
+- If no concern: growth-focused recommendation.
+
+
+7) STUDENT SELF-ANALYTICS + TOP 3 LEADERBOARD
+==============================================
+Location:
+- backend/routes/performance.py
+Endpoint:
+- GET /performance/student/self-analytics
+
+7.1 Benchmarks
+- my_metrics (current student)
+- class_average
+- topper_benchmark (rank 1)
+
+7.2 Comparison Output
+- my_rank
+- vs_class_average deltas:
+  - weighted_score_delta
+  - marks_delta
+  - attendance_delta
+- vs_topper gaps:
+  - weighted_score_gap
+  - marks_gap
+  - attendance_gap
+
+7.3 Leaderboard
+- leaderboard_top_3 sorted by weighted_score descending
+- includes rank, name, username, weighted_score, grade
+
+
+8) FRONTEND INTEGRATION SUMMARY
+===============================
+Teacher Dashboard:
+- assignment form now supports due_date/rubric/max_marks
+- assignment table shows submission summary
+- one-click "Send Reminder Emails"
+- student insights + deep analysis dialogs
+
+Student Dashboard:
+- assignment status label uses submitted/late/missing
+- self analytics benchmark panel
+- top 3 leaderboard panel
+
+
+9) HOW TO REBUILD FROM SCRATCH (STEP-BY-STEP)
+==============================================
+1. Define domain models (users, assignments, outcomes, performance, attendance).
+2. Build assignment CRUD with due_date + rubric + max_marks.
+3. Add per-student outcome object and compute submission_status.
+4. Build SMTP mail utility and reminder log table for dedupe.
+5. Add scheduled reminder endpoint runner.
+6. Build deterministic risk engine with configurable thresholds and weights.
+7. Add explainability breakdown per risk factor.
+8. Add risk config versioning + rollback + simulation.
+9. Add NL query parser (intent + scope extraction + role guards).
+10. Add session memory for chat continuity.
+11. Build deep student analysis formulas (trend, consistency, readiness, momentum).
+12. Build student benchmark and leaderboard endpoint.
+13. Connect frontend cards/tables/dialogs to these APIs.
+14. Validate with real sample class data.
+
+
+10) WHAT TO IMPROVE NEXT (PRODUCTION-LEVEL)
+===========================================
+- Move reminder trigger to cron scheduler automatically daily.
+- Add retry queue for failed emails.
+- Add unit tests for formulas and status transitions.
+- Add DB indexes for heavy queries.
+- Replace keyword NL parser with intent classifier if needed.
+
+
+END OF IMPLEMENTATION GUIDE

@@ -30,6 +30,12 @@ import StatCard from "../components/StatCard";
 import TeacherAssessmentModule from "../components/TeacherAssessmentModule";
 import RichAssignmentEditorDialog from "../components/RichAssignmentEditorDialog";
 import RoleCalendarWidget from "../components/RoleCalendarWidget";
+import {
+  BotmitraDialog,
+  StudentInsightsDialog,
+  StudentProgressDialog,
+  StudentsDialog,
+} from "../components/teacher/TeacherDialogs";
 import { apiFetch } from "../lib/api";
 import { notifyNewItems, requestNotificationPermissionOnce } from "../lib/webNotify";
 
@@ -89,6 +95,9 @@ function TeacherDashboard() {
   const [studentInsightsOpen, setStudentInsightsOpen] = useState(false);
   const [studentInsightsMeta, setStudentInsightsMeta] = useState({ class_name: "", section: "" });
   const [studentInsightsRows, setStudentInsightsRows] = useState([]);
+  const [studentProgressOpen, setStudentProgressOpen] = useState(false);
+  const [studentProgressLoading, setStudentProgressLoading] = useState(false);
+  const [studentProgressData, setStudentProgressData] = useState(null);
   const [pageView, setPageView] = useState("overview");
   const [assignmentStudents, setAssignmentStudents] = useState([]);
   const [assignmentForm, setAssignmentForm] = useState({
@@ -102,6 +111,7 @@ function TeacherDashboard() {
     question: "",
     content_html: "",
     due_date: "",
+    max_marks: 100,
   });
 
   const stripHtml = (html) => String(html || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -402,6 +412,7 @@ function TeacherDashboard() {
       question: "",
       content_html: "",
       due_date: "",
+      max_marks: 100,
     });
     setAssignmentDialogOpen(true);
     setAssignmentLoading(`load-${className}-${section}`);
@@ -459,6 +470,14 @@ function TeacherDashboard() {
       setError("Please select a student for personal assignment");
       return;
     }
+    if (!assignmentForm.due_date) {
+      setError("Due date is required");
+      return;
+    }
+    if (Number(assignmentForm.max_marks || 0) <= 0) {
+      setError("Max marks must be greater than 0");
+      return;
+    }
     setAssignmentLoading("create");
     setError("");
     try {
@@ -478,6 +497,7 @@ function TeacherDashboard() {
           question: assignmentForm.question.trim(),
           content_html: assignmentForm.content_html || "",
           due_date: assignmentForm.due_date || undefined,
+          max_marks: Number(assignmentForm.max_marks || 100),
         }),
       });
       setMessage("Assignment created and assigned");
@@ -593,6 +613,44 @@ function TeacherDashboard() {
       setStudentInsightsOpen(true);
     } catch (err) {
       setError(err.message || "Failed to load student insights");
+    } finally {
+      setAssignmentLoading("");
+    }
+  };
+
+  const openStudentProgressAnalysis = async (studentUsername) => {
+    if (!studentUsername || !studentInsightsMeta.class_name || !studentInsightsMeta.section) return;
+    setStudentProgressLoading(true);
+    setError("");
+    try {
+      const data = await apiFetch(
+        `/teacher/student-progress-analysis?class_name=${encodeURIComponent(
+          studentInsightsMeta.class_name
+        )}&section=${encodeURIComponent(studentInsightsMeta.section)}&student_username=${encodeURIComponent(studentUsername)}`
+      );
+      setStudentProgressData(data || null);
+      setStudentProgressOpen(true);
+    } catch (err) {
+      setError(err.message || "Failed to load student progress analysis");
+    } finally {
+      setStudentProgressLoading(false);
+    }
+  };
+
+  const runAssignmentReminders = async () => {
+    setAssignmentLoading("reminders");
+    setError("");
+    setMessage("");
+    try {
+      const data = await apiFetch("/teacher/assignments/send-reminders", {
+        method: "POST",
+        body: JSON.stringify({ days_before_due: 1 }),
+      });
+      setMessage(
+        `Reminder job completed. Sent: ${data?.sent ?? 0}, Skipped: ${data?.skipped ?? 0}, Failed: ${data?.failed ?? 0}`
+      );
+    } catch (err) {
+      setError(err.message || "Failed to run reminder emails");
     } finally {
       setAssignmentLoading("");
     }
@@ -910,11 +968,21 @@ function TeacherDashboard() {
                 />
               </Grid>
               <Grid item xs={12} md={2}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Max Marks"
+                  value={assignmentForm.max_marks}
+                  onChange={(e) => setAssignmentForm((prev) => ({ ...prev, max_marks: e.target.value }))}
+                  inputProps={{ min: 1 }}
+                />
+              </Grid>
+              <Grid item xs={12} md={2}>
                 <Button fullWidth variant="outlined" onClick={openAssignmentEditor}>
                   Open Rich Editor
                 </Button>
               </Grid>
-              <Grid item xs={12} md={10}>
+              <Grid item xs={12} md={8}>
                 <TextField
                   fullWidth
                   label="Rich Content Preview"
@@ -930,7 +998,17 @@ function TeacherDashboard() {
               </Grid>
             </Grid>
 
-            <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>Assigned Tasks</Typography>
+            <Box sx={{ mt: 2, mb: 1, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
+              <Typography variant="subtitle2">Assigned Tasks</Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={runAssignmentReminders}
+                disabled={assignmentLoading === "reminders"}
+              >
+                {assignmentLoading === "reminders" ? "Sending..." : "Send Reminder Emails"}
+              </Button>
+            </Box>
             <TableContainer component={Paper}>
               <Table size="small">
                 <TableHead>
@@ -955,10 +1033,10 @@ function TeacherDashboard() {
                       <TableCell>{row.due_date || "-"}</TableCell>
                       <TableCell>
                         {row.assignment_type === "common"
-                          ? `${row.completed_count || 0} completed`
+                          ? `Submitted ${row?.submission_summary?.submitted ?? 0}, Late ${row?.submission_summary?.late ?? 0}, Missing ${row?.submission_summary?.missing ?? 0}`
                           : row.status === "completed"
-                            ? "Completed"
-                            : "Pending"}
+                            ? "Submitted"
+                            : "Missing"}
                       </TableCell>
                       <TableCell>{row.status}</TableCell>
                       <TableCell>
@@ -1218,78 +1296,17 @@ function TeacherDashboard() {
         botmitra
       </Button>
 
-      <Dialog open={aiOpen} onClose={() => setAiOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>botmitra AI Agent</DialogTitle>
-        <DialogContent dividers>
-          <Paper variant="outlined" sx={{ p: 2, mb: 2, height: 320, overflowY: "auto", bgcolor: "#f8fbff" }}>
-            {aiChat.map((msg, idx) => (
-              <Box
-                key={`${msg.role}-${idx}`}
-                sx={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", mb: 1 }}
-              >
-                <Box
-                  sx={{
-                    maxWidth: "82%",
-                    px: 1.5,
-                    py: 1,
-                    borderRadius: 2,
-                    bgcolor: msg.role === "user" ? "primary.main" : "#e8eef8",
-                    color: msg.role === "user" ? "white" : "text.primary",
-                    whiteSpace: "pre-wrap",
-                    fontSize: 13,
-                  }}
-                >
-                  {msg.text}
-                </Box>
-              </Box>
-            ))}
-            {aiLoading && (
-              <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 1 }}>
-                <Box
-                  sx={{
-                    maxWidth: "82%",
-                    px: 1.5,
-                    py: 1,
-                    borderRadius: 2,
-                    bgcolor: "#e8eef8",
-                    color: "text.primary",
-                    fontSize: 13,
-                    fontStyle: "italic",
-                  }}
-                >
-                  botmitra is typing...
-                </Box>
-              </Box>
-            )}
-            <Box ref={aiChatEndRef} />
-          </Paper>
-
-          <Grid container spacing={1.5}>
-            <Grid item xs={12} md={10}>
-              <TextField
-                fullWidth
-                label="Ask botmitra"
-                placeholder="Show students with low attendance in MCA-B"
-                value={aiForm.query}
-                onChange={(e) => setAiForm((prev) => ({ ...prev, query: e.target.value }))}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    runAiQuery();
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} md={2} sx={{ display: "flex", gap: 1 }}>
-              <Button fullWidth variant="contained" onClick={runAiQuery} disabled={aiLoading}>Send</Button>
-              <Button fullWidth variant="outlined" onClick={runAiReport} disabled={aiLoading}>Report</Button>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAiOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+      <BotmitraDialog
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        aiChat={aiChat}
+        aiLoading={aiLoading}
+        aiFormQuery={aiForm.query}
+        onChangeQuery={(value) => setAiForm((prev) => ({ ...prev, query: value }))}
+        onSend={runAiQuery}
+        onReport={runAiReport}
+        chatEndRef={aiChatEndRef}
+      />
 
       <Dialog open={assignmentOutcomesOpen} onClose={() => setAssignmentOutcomesOpen(false)} maxWidth="lg" fullWidth>
         <DialogTitle>
@@ -1374,49 +1391,21 @@ function TeacherDashboard() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={studentInsightsOpen} onClose={() => setStudentInsightsOpen(false)} maxWidth="lg" fullWidth>
-        <DialogTitle>
-          Student Insights - {studentInsightsMeta.class_name}-{studentInsightsMeta.section}
-        </DialogTitle>
-        <DialogContent dividers>
-          <TableContainer component={Paper}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Student</TableCell>
-                  <TableCell>Attendance %</TableCell>
-                  <TableCell>Marks Avg</TableCell>
-                  <TableCell>Assignment Grade Avg</TableCell>
-                  <TableCell>Readiness</TableCell>
-                  <TableCell>NLP Risk Flags</TableCell>
-                  <TableCell>AI Feedback</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {(studentInsightsRows || []).map((row, idx) => (
-                  <TableRow key={`${row.username}-${idx}`}>
-                    <TableCell>{row.name} ({row.username})</TableCell>
-                    <TableCell>{row.attendance_percentage ?? 0}</TableCell>
-                    <TableCell>{row.average_marks ?? 0}</TableCell>
-                    <TableCell>{row.assignment_grade_average ?? "-"}</TableCell>
-                    <TableCell>{row.readiness_score ?? 0}</TableCell>
-                    <TableCell>{(row?.nlp?.risk_flags || []).join(", ") || "-"}</TableCell>
-                    <TableCell>{row.ai_feedback || "-"}</TableCell>
-                  </TableRow>
-                ))}
-                {(studentInsightsRows || []).length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={7}>No student insight data available.</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setStudentInsightsOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+      <StudentInsightsDialog
+        open={studentInsightsOpen}
+        onClose={() => setStudentInsightsOpen(false)}
+        meta={studentInsightsMeta}
+        rows={studentInsightsRows}
+        onDeepAnalysis={openStudentProgressAnalysis}
+        studentProgressLoading={studentProgressLoading}
+      />
+
+      <StudentProgressDialog
+        open={studentProgressOpen}
+        onClose={() => setStudentProgressOpen(false)}
+        loading={studentProgressLoading}
+        data={studentProgressData}
+      />
 
       <Dialog open={assignmentDialogOpen} onClose={() => setAssignmentDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Create Assignment Task</DialogTitle>
@@ -1521,6 +1510,16 @@ function TeacherDashboard() {
                 onChange={(e) => setAssignmentForm((prev) => ({ ...prev, question: e.target.value }))}
               />
             </Grid>
+              <Grid item xs={12} md={3}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Max Marks"
+                value={assignmentForm.max_marks}
+                onChange={(e) => setAssignmentForm((prev) => ({ ...prev, max_marks: e.target.value }))}
+                inputProps={{ min: 1 }}
+              />
+            </Grid>
             <Grid item xs={12} md={3}>
               <Button fullWidth variant="outlined" onClick={openAssignmentEditor}>
                 Open Rich Editor
@@ -1553,65 +1552,16 @@ function TeacherDashboard() {
         onSave={saveAssignmentEditor}
       />
 
-      <Dialog open={studentsDialogOpen} onClose={() => setStudentsDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          Students - {selectedClass.class_name}-{selectedClass.section}
-        </DialogTitle>
-        <DialogContent dividers>
-          {studentsLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <TableContainer component={Paper}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Username</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Roll No</TableCell>
-                    <TableCell>Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {studentsList.map((student, idx) => (
-                    <TableRow key={`${student.username}-${idx}`}>
-                      <TableCell>{student.username || "-"}</TableCell>
-                      <TableCell>
-                        <TextField
-                          size="small"
-                          value={student.edited_name || ""}
-                          onChange={(e) => updateStudentField(idx, "edited_name", e.target.value)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <TextField
-                          size="small"
-                          value={student.edited_roll_no || ""}
-                          onChange={(e) => updateStudentField(idx, "edited_roll_no", e.target.value)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          disabled={studentsSaving === student.username}
-                          onClick={() => saveStudentRecord(student)}
-                        >
-                          Save
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setStudentsDialogOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+      <StudentsDialog
+        open={studentsDialogOpen}
+        onClose={() => setStudentsDialogOpen(false)}
+        selectedClass={selectedClass}
+        studentsLoading={studentsLoading}
+        studentsList={studentsList}
+        studentsSaving={studentsSaving}
+        onChangeField={updateStudentField}
+        onSaveStudent={saveStudentRecord}
+      />
     </Container>
   );
 }
