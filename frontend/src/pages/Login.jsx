@@ -12,6 +12,7 @@ import {
 import LockRoundedIcon from "@mui/icons-material/LockRounded";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 import { useNavigate } from "react-router-dom";
+import { API_BASE } from "../lib/api";
 
 function Login() {
   const [username, setUsername] = useState("");
@@ -34,7 +35,7 @@ function Login() {
     formData.append("password", password);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/auth/login", {
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData,

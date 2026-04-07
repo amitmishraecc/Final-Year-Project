@@ -26,10 +26,8 @@ import {
 } from "@mui/material";
 import StatCard from "../components/StatCard";
 import RoleCalendarWidget from "../components/RoleCalendarWidget";
-import { apiFetch } from "../lib/api";
+import { API_BASE, apiFetch } from "../lib/api";
 import { notifyNewItems, requestNotificationPermissionOnce } from "../lib/webNotify";
-
-const API_BASE = "http://127.0.0.1:8000";
 
 function GraphBars({ title, data = [] }) {
   const maxValue = Math.max(...data.map((item) => item.value), 1);
