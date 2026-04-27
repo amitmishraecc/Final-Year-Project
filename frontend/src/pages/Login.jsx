@@ -62,6 +62,7 @@ function Login() {
     } finally {
       setLoading(false);
     }
+  
   };
 
   return (
@@ -291,7 +292,7 @@ function Login() {
           }}
         >
           <Typography sx={{ fontWeight: 500, letterSpacing: 0.2, fontSize: { xs: "0.9rem", md: 34 } }}>
-            Amit Mishra | MCA Section A
+            Master of Computer Applications
           </Typography>
         </Box>
       </Paper>
